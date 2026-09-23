@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.database.connection import get_db
 from app.models.user import User
-from app.schemas.users import UserCreate, UserResponse
+from app.schemas.users import UserCreate, UserUpdate, UserResponse
 from app.services.security import gerar_hash
 from app.api.auth import get_current_user
 
@@ -65,5 +65,29 @@ def buscar_usuario(
             status_code=404,
             detail="Usuário não encontrado."
         )
+
+    return usuario
+@router.put("/{user_id}", response_model=UserResponse)
+def atualizar_usuario(
+    user_id: int,
+    dados: UserUpdate,
+    email: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    usuario = db.query(User).filter(
+        User.id == user_id
+    ).first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=404,
+            detail="Usuário não encontrado."
+        )
+
+    usuario.nome = dados.nome
+    usuario.email = dados.email
+
+    db.commit()
+    db.refresh(usuario)
 
     return usuario
